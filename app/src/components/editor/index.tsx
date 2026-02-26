@@ -23,7 +23,6 @@ export const EditorComponent = () => {
 		openFile,
 		closeTab,
 		updateFileContent,
-		saveActiveFile,
 		loadFileTree,
 	} = useAppStore();
 
@@ -35,18 +34,6 @@ export const EditorComponent = () => {
 		}
 		loadFileTree();
 	}, []);
-
-	// keyboard shortcut: Cmd+S to save
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-				e.preventDefault();
-				saveActiveFile();
-			}
-		};
-		window.addEventListener('keydown', handleKeyDown);
-		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [saveActiveFile]);
 
 	if (!currentProject) return null;
 

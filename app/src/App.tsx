@@ -8,6 +8,7 @@ import { EditorPage } from "./pages/editor";
 import { ConfigurationPage } from "./pages/config";
 import { RequireGuest } from "./providers/guest";
 import { RequireConfig } from "./providers/config";
+import { Toaster } from "sonner";
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/editor" element={<EditorPage />} />
         </Route>
       </Routes>
+      <Toaster />
     </BrowserRouter>
   </React.StrictMode>
 );

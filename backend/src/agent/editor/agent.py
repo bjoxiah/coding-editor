@@ -14,13 +14,20 @@ class EditorAgent:
             model=self._build_model(),
             retries=3,
             deps_type=EditorDeps,
-            system_prompt=get_system_prompt(),
-            # NO output_type — agent uses tools to write files
-            # and returns a text summary when done
+            system_prompt=get_system_prompt()
         )
         self._register_tools()
+        self._register_dynamic_prompt()
 
-
+    def _register_dynamic_prompt(self):
+        @self.agent.system_prompt(dynamic=True)
+        async def dynamic_system_prompt(ctx: RunContext[EditorDeps]) -> str:
+            return (
+                f'\n\nYou are provided with the following file content to fix \n\n"{ctx.deps.content}". \n\n'
+                f"Address the issues as defined by the user.\n"
+            )            
+            
+        
     def _register_tools(self):
 
         @self.agent.tool
@@ -29,19 +36,15 @@ class EditorAgent:
             Path must be relative to the project root (e.g. 'app/(tabs)/index.tsx').
             Always use this tool to create or update files."""
 
-            # track
-            file_event = {"path": ctx.deps.file_name, "content": content}
-            ctx.deps.files_written.append(file_event)
-
             # push to SSE stream
             await ctx.deps.event_queue.put({
                 "type": "file_write",
-                "path": ctx.deps.file_name,
-                "full_path": ctx.deps.file_path,
+                "path": ctx.deps.relative_path,
+                "full_path": '',
                 "content": content,
             })
 
-            return f"Successfully wrote {ctx.deps.file_name}"
+            return f"Successfully wrote {ctx.deps.relative_path}"
 
     @staticmethod
     def get_api_key() -> str:
@@ -51,6 +54,7 @@ class EditorAgent:
         return api_key
 
     def _build_model(self) -> OpenRouterModel:
+        # nitro suffix: prioritize speed
         return OpenRouterModel(
             'google/gemini-3-flash-preview:nitro',
             provider=OpenRouterProvider(api_key=self.get_api_key()),

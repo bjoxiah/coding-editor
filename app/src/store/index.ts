@@ -1,285 +1,314 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { invoke } from "@tauri-apps/api/core";
-import { CodeFile, FileNode, IAppState, Project, ProjectLogs } from "../models";
-import { tauriStorage } from "@/lib/persistence";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/core';
+import { CodeFile, FileNode, IAppState, Project, ProjectLogs } from '../models';
+import { tauriStorage } from '@/lib/persistence';
+import { toast } from 'sonner';
 
 // Actions
 
 type AppActions = {
-  addProject: (meta: Project) => void;
-  removeProject: (path: string, deleteFromDisk?: boolean) => Promise<void>;
-  setCurrentProject: (project: Project | null) => void;
-  loadFileTree: () => Promise<void>;
-  closeProject: () => void;
-  openFile: (path: string) => Promise<void>;
-  setActiveFile: (file: CodeFile | null) => void;
-  updateFileContent: (path: string, content: string) => void;
-  closeTab: (path: string) => void;
-  saveActiveFile: () => Promise<void>;
-  onAgentFileWrite: (path: string, content: string) => void;
-  setAgentRunning: (running: boolean) => void;
-  setExpoRunning: (running: boolean) => void;
-  addProjectLog: (entry: ProjectLogs) => void;
-  addExpoUrl: (url: string) => void;
+	addProject: (meta: Project) => void;
+	removeProject: (path: string, deleteFromDisk?: boolean) => Promise<void>;
+	setCurrentProject: (project: Project | null) => void;
+	loadFileTree: () => Promise<void>;
+	closeProject: () => void;
+	openFile: (path: string) => Promise<void>;
+	setActiveFile: (file: CodeFile | null) => void;
+	updateFileContent: (path: string, content: string) => void;
+	closeTab: (path: string) => void;
+	saveActiveFile: () => Promise<void>;
+	onAgentFileWrite: (path: string, content: string) => void;
+	setAgentRunning: (running: boolean) => void;
+	setExpoRunning: (running: boolean) => void;
+	addProjectLog: (entry: ProjectLogs) => void;
+	addExpoUrl: (url: string) => void;
 
-  reset: () => void;
+	reset: () => void;
 };
 
 // Initial State
 
 const initialState: IAppState = {
-  projects: [],
-  currentProject: null,
-  activeFile: null,
-  openTabs: [],
-  agentRunning: false,
-  expoRunning: false,
-  unsavedPaths: new Set<string>(),
+	projects: [],
+	currentProject: null,
+	activeFile: null,
+	openTabs: [],
+	agentRunning: false,
+	expoRunning: false,
+	unsavedPaths: new Set<string>(),
 };
 
 // Store
 
 export const useAppStore = create<IAppState & AppActions>()(
-  persist(
-    (set, get) => ({
-      ...initialState,
-      
-      addProject: (meta) => {
-        const { projects } = get();
-        const filtered = projects.filter((p) => p.id !== meta.id);
-        set({ projects: [meta, ...filtered] });
-      },
+	persist(
+		(set, get) => ({
+			...initialState,
 
-      removeProject: async (path, deleteFromDisk = false) => {
-        const { projects, currentProject } = get();
+			addProject: (meta) => {
+				const { projects } = get();
+				const filtered = projects.filter((p) => p.id !== meta.id);
+				set({ projects: [meta, ...filtered] });
+			},
 
-        // delete files from disk
-        if (deleteFromDisk) {
-          try {
-            await invoke("delete_project", { projectPath: path });
-          } catch (err) {
-            console.error("Failed to delete project from disk:", err);
-          }
-        }
+			removeProject: async (path, deleteFromDisk = false) => {
+				const { projects, currentProject } = get();
 
-        set({
-          projects: projects.filter((p) => p.path !== path),
-          ...(currentProject?.path === path
-            ? {
-                currentProject: null,
-                activeFile: null,
-                openTabs: [],
-                agentRunning: false,
-                expoRunning: false,
-              }
-            : {}),
-        });
-      },
+				// delete files from disk
+				if (deleteFromDisk) {
+					try {
+						await invoke('delete_project', { projectPath: path });
+					} catch (err) {
+						console.error(
+							'Failed to delete project from disk:',
+							err,
+						);
+					}
+				}
 
-      setCurrentProject: (project) => {
-        const { activeFile, openTabs } = get();
-        set({
-          currentProject: project,
-          activeFile: project == null ? null : activeFile,
-          openTabs: project == null ? [] : openTabs,
-        })
-      },
+				set({
+					projects: projects.filter((p) => p.path !== path),
+					...(currentProject?.path === path
+						? {
+								currentProject: null,
+								activeFile: null,
+								openTabs: [],
+								agentRunning: false,
+								expoRunning: false,
+							}
+						: {}),
+				});
+			},
 
-      loadFileTree: async () => {
-        const { currentProject } = get();
-        if (!currentProject) return;
+			setCurrentProject: (project) => {
+				const { activeFile, openTabs } = get();
+				set({
+					currentProject: project,
+					activeFile: project == null ? null : activeFile,
+					openTabs: project == null ? [] : openTabs,
+				});
+			},
 
-        try {
-          const tree = await invoke<FileNode[]>("get_file_tree", {
-            projectPath: currentProject.path,
-          });
-          set({ currentProject: { ...currentProject, tree } });
-        } catch (err) {
-          console.error("Failed to load file tree:", err);
-        }
-      },
+			loadFileTree: async () => {
+				const { currentProject } = get();
+				if (!currentProject) return;
 
-      closeProject: () => {
-        set({
-          currentProject: null,
-          activeFile: null,
-          openTabs: [],
-          agentRunning: false,
-          expoRunning: false,
-          unsavedPaths: new Set(),
-        });
-      },
+				try {
+					const tree = await invoke<FileNode[]>('get_file_tree', {
+						projectPath: currentProject.path,
+					});
+					set({ currentProject: { ...currentProject, tree } });
+				} catch (err: any) {
+					toast.error(err, {
+						position: 'top-center',
+					});
+				}
+			},
 
-      openFile: async (path: string) => {
-        const { currentProject, openTabs } = get();
+			closeProject: () => {
+				set({
+					currentProject: null,
+					activeFile: null,
+					openTabs: [],
+					agentRunning: false,
+					expoRunning: false,
+					unsavedPaths: new Set(),
+				});
+			},
+
+			openFile: async (path: string) => {
+				const { currentProject, openTabs } = get();
+				if (!currentProject) return;
+
+				const existing = currentProject.files.find(
+					(f) => f.path === path,
+				);
+				if (existing) {
+					set({
+						activeFile: existing,
+						openTabs: openTabs.includes(path)
+							? openTabs
+							: [...openTabs, path],
+					});
+					return;
+				}
+
+				try {
+					const content = await invoke<string>('read_file', {
+						projectPath: currentProject.path,
+						filePath: path,
+					});
+
+					const file: CodeFile = { path, content };
+
+					set({
+						currentProject: {
+							...currentProject,
+							files: [...currentProject.files, file],
+						},
+						activeFile: file,
+						openTabs: openTabs.includes(path)
+							? openTabs
+							: [...openTabs, path],
+					});
+				} catch (err: any) {
+					toast.error(err, {
+						position: 'top-center',
+					});
+				}
+			},
+
+			setActiveFile: (file: CodeFile | null) => set({ activeFile: file }),
+
+			updateFileContent: (path, content) => {
+        const { currentProject, activeFile, unsavedPaths } = get();
         if (!currentProject) return;
 
         const existing = currentProject.files.find((f) => f.path === path);
-        if (existing) {
-          set({
-            activeFile: existing,
-            openTabs: openTabs.includes(path)
-              ? openTabs
-              : [...openTabs, path],
-          });
-          return;
-        }
 
-        try {
-          const content = await invoke<string>("read_file", {
-            projectPath: currentProject.path,
-            filePath: path,
-          });
-
-          const file: CodeFile = { path, content };
-
-          set({
-            currentProject: {
-              ...currentProject,
-              files: [...currentProject.files, file],
-            },
-            activeFile: file,
-            openTabs: openTabs.includes(path)
-              ? openTabs
-              : [...openTabs, path],
-          });
-        } catch (err) {
-          console.error("Failed to open file:", err);
-        }
-      },
-
-      setActiveFile: (file: CodeFile | null) => set({ activeFile: file }),
-
-      updateFileContent: (path, content) => {
-        const { currentProject, activeFile, unsavedPaths } = get();
-        if (!currentProject) return;
-
-        const updatedFiles = currentProject.files.map((f) =>
-          f.path === path ? { ...f, content } : f
-        );
+        if (existing?.content === content) return;
 
         set({
           unsavedPaths: new Set([...unsavedPaths, path]),
-          currentProject: { ...currentProject, files: updatedFiles },
+          currentProject: {
+            ...currentProject,
+            files: currentProject.files.map((f) =>
+              f.path === path ? { ...f, content } : f,
+            ),
+          },
           activeFile:
-            activeFile?.path === path
-              ? { ...activeFile, content }
-              : activeFile,
+            activeFile?.path === path ? { ...activeFile, content } : activeFile,
         });
       },
 
-      closeTab: (path) => {
-        const { openTabs, activeFile } = get();
-        const next = openTabs.filter((t) => t !== path);
-        set({
-          openTabs: next,
-          activeFile:
-            activeFile?.path === path
-              ? next.length > 0
-                ? { path: next[next.length - 1], content: "" }
-                : null
-              : activeFile,
-        });
+			closeTab: (path) => {
+				const { openTabs, activeFile, unsavedPaths } = get();
+				const next = openTabs.filter((t) => t !== path);
 
-        if (activeFile?.path === path && next.length > 0) {
-          get().openFile(next[next.length - 1]);
-        }
-      },
+				const nextUnsaved = new Set(unsavedPaths);
+				nextUnsaved.delete(path);
 
-      saveActiveFile: async () => {
-        const { currentProject, activeFile, unsavedPaths } = get();
-        if (!currentProject || !activeFile) return;
+				set({
+					openTabs: next,
+					unsavedPaths: nextUnsaved,
+					activeFile:
+						activeFile?.path === path
+							? next.length > 0
+								? { path: next[next.length - 1], content: '' }
+								: null
+							: activeFile,
+				});
 
-        try {
-          await invoke("save_file", {
-            projectPath: currentProject.path,
-            filePath: activeFile.path,
-            content: activeFile.content,
-          });
+				if (activeFile?.path === path && next.length > 0) {
+					get().openFile(next[next.length - 1]);
+				}
+			},
 
-          // Remove only the saved file from dirty set
-          const next = new Set(unsavedPaths);
-          next.delete(activeFile.path);
-          set({ unsavedPaths: next });
-        } catch (err) {
-          console.error("Failed to save file:", err);
-        }
-      },
+			saveActiveFile: async () => {
+				const { currentProject, activeFile, unsavedPaths } = get();
+				if (!currentProject || !activeFile) return;
 
-      onAgentFileWrite: (path, content) => {
-        const { currentProject, openTabs } = get();
-        if (!currentProject) return;
+				try {
+					await invoke('save_file', {
+						projectPath: currentProject.path,
+						filePath: activeFile.path,
+						content: activeFile.content,
+					});
 
-        const file: CodeFile = { path, content };
+					// Remove only the saved file from dirty set
+					const next = new Set(unsavedPaths);
+					next.delete(activeFile.path);
+					set({ unsavedPaths: next });
+				} catch (err: any) {
+					toast.error(err, {
+						position: 'top-center',
+					});
+				}
+			},
 
-        const existingIndex = currentProject.files.findIndex(
-          (f) => f.path === path
-        );
-        const updatedFiles =
-          existingIndex >= 0
-            ? currentProject.files.map((f) =>
-                f.path === path ? file : f
-              )
-            : [...currentProject.files, file];
+			onAgentFileWrite: (path, content) => {
+				const { currentProject, openTabs, unsavedPaths } = get();
+				if (!currentProject) return;
 
-        set({
-          currentProject: { ...currentProject, files: updatedFiles },
-          activeFile: file,
-          openTabs: openTabs.includes(path)
-            ? openTabs
-            : [...openTabs, path],
-        });
-      },
+				const file: CodeFile = { path, content };
 
-      setAgentRunning: (running) => set({ agentRunning: running }),
-      setExpoRunning: (running) => set({ expoRunning: running }),
+        const nextUnsaved = new Set(unsavedPaths);
+				nextUnsaved.delete(path);
 
-      addProjectLog: (entry: ProjectLogs) => {
-        const { currentProject } = get();
-        if (!currentProject) return;
+				const existingIndex = currentProject.files.findIndex(
+					(f) => f.path === path,
+				);
+				const updatedFiles =
+					existingIndex >= 0
+						? currentProject.files.map((f) =>
+								f.path === path ? file : f,
+							)
+						: [...currentProject.files, file];
 
-        const log: ProjectLogs = {
-          ...entry,
-          timestamp: new Date().toISOString(),
-        };
+				set({
+					currentProject: { ...currentProject, files: updatedFiles },
+					activeFile: file,
+          unsavedPaths: nextUnsaved,
+					openTabs: openTabs.includes(path)
+						? openTabs
+						: [...openTabs, path],
+				});
+			},
 
-        const updatedProject = {
-          ...currentProject,
-          logs: [
-            ...currentProject.logs.filter(x => !(x.action === entry.action && x.type === 'error')),
-            log,
-          ],
-        };
+			setAgentRunning: (running) => set({ agentRunning: running }),
+			setExpoRunning: (running) => set({ expoRunning: running }),
 
-        set({ currentProject: updatedProject });
-        set(state => ({
-          projects: state.projects.map(p => p.id === updatedProject.id ? updatedProject : p)
-        }));
-      },
+			addProjectLog: (entry: ProjectLogs) => {
+				const { currentProject } = get();
+				if (!currentProject) return;
 
-      addExpoUrl: (url: string) => {
-        const { currentProject } = get();
-        if (!currentProject) return;
+				const log: ProjectLogs = {
+					...entry,
+					timestamp: new Date().toISOString(),
+				};
 
-        const updatedProject = {...currentProject, expoUrl: url };
+				const updatedProject = {
+					...currentProject,
+					logs: [
+						...currentProject.logs.filter(
+							(x) =>
+								!(x.runId === entry.runId && x.type === 'error')
+						),
+						log,
+					],
+				};
 
-        set({ currentProject: updatedProject });
-        const { projects } = get();
-        const updatedProjects = projects.map((p) =>
-          p.id === updatedProject.id ? updatedProject : p
-        );
-        set({ projects: updatedProjects });
-      },
+				set({ currentProject: updatedProject });
+				set((state) => ({
+					projects: state.projects.map((p) =>
+						p.id === updatedProject.id ? updatedProject : p,
+					),
+				}));
+			},
 
-      reset: () => set(initialState),
-    }),
-    {
-      name: "app-store",
-      storage: tauriStorage,
-      partialize: (state) => ({
-        projects: state.projects,
-      }),
-    }
-  )
+			addExpoUrl: (url: string) => {
+				const { currentProject } = get();
+				if (!currentProject) return;
+
+				const updatedProject = { ...currentProject, expoUrl: url };
+
+				set({ currentProject: updatedProject });
+				const { projects } = get();
+				const updatedProjects = projects.map((p) =>
+					p.id === updatedProject.id ? updatedProject : p,
+				);
+				set({ projects: updatedProjects });
+			},
+
+			reset: () => set(initialState),
+		}),
+		{
+			name: 'app-store',
+			storage: tauriStorage,
+			partialize: (state) => ({
+				projects: state.projects,
+			}),
+		},
+	),
 );

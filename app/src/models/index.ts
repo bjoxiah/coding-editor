@@ -28,6 +28,7 @@ export interface Project {
 }
 
 export type ProjectLogs = {
+  runId:  string,
   action: "scaffold" | "edit" | "preview",
   type: "file_write" | "status" | "done" | "error",
   message: string,

@@ -5,18 +5,19 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-interface LogGroup {
+export interface LogGroup {
+  runId:  string;
   action: 'scaffold' | 'edit' | 'preview';
-  logs: ProjectLogs[];
+  logs:   ProjectLogs[];
 }
 
 export const groupLogs = (logs: ProjectLogs[]): LogGroup[] => {
   return logs.reduce<LogGroup[]>((acc, log) => {
     const last = acc[acc.length - 1];
-    if (last && last.action === log.action) {
+    if (last && last.runId === log.runId) {
       last.logs.push(log);
     } else {
-      acc.push({ action: log.action, logs: [log] });
+      acc.push({ runId: log.runId, action: log.action, logs: [log] });
     }
     return acc;
   }, []);

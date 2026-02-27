@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "../../store";
 import { FileNode } from "../../models";
-import { runAgent } from "../../service";
+import { scaffoldAgentOperation } from "../../service";
 import { ColorPicker } from "./color-picker";
 import { ImageUploadZone } from "./image-upload";
 import { useSettings } from "@/store/settings";
@@ -156,13 +156,13 @@ export const PromptComponent = () => {
 
       addProject(proj);
       setCurrentProject(proj);
-
-      runAgent({
-        project_path: projectPath,
+      // refactored name
+      scaffoldAgentOperation({
+        projectPath,
         prompt,
-        app_name: name,
-        brand_color: brandColor,
-        image_urls: s3ImageKeys,
+        appName: name,
+        brandColor: brandColor,
+        imageUrls: s3ImageKeys,
       });
 
       await new Promise((res) => setTimeout(res, 10000)); // a little delay

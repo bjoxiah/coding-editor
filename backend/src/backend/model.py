@@ -9,6 +9,7 @@ class ScaffoldRequestModel(BaseModel):
     image_urls: list[str] = Field(default_factory=list) 
     
 class EditRequestModel(BaseModel):
-    file_name: str
-    file_path: str
+    project_path: str
+    relative_path: str
     content: str
+    user_prompt: str

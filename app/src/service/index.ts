@@ -1,2 +1,2 @@
-export { runAgent } from "./agent-service";
+export { scaffoldAgentOperation } from "./agent-service";
 export { publishToSnack } from "./snack-service";

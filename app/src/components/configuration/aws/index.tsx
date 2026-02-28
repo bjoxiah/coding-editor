@@ -81,6 +81,10 @@ export const StepAWS = ({
 					<Label>Region</Label>
 					<input
 						{...register('aws_region')}
+						autoCapitalize="none"
+						autoCorrect="off"
+						autoComplete="off"
+						spellCheck={false}
 						placeholder="us-east-1"
 						className={`${inputClass(!!errors.aws_region)} font-mono`}
 					/>

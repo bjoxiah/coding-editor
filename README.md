@@ -2,14 +2,12 @@
 
 An AI-powered desktop coding editor that scaffolds React Native projects using natural language prompts. Built with Tauri, React, FastAPI, and PydanticAI.
 
-[![YouTube](https://img.shields.io/badge/YouTube-Part%201-red)](https://youtu.be/2GripaOtlbY)
-![Tauri](https://img.shields.io/badge/Tauri-2.0-blue)
-![Python](https://img.shields.io/badge/Python-3.11+-yellow)
+[![YouTube](https://img.shields.io/badge/YouTube-TutorialSeries-red)](https://youtu.be/2GripaOtlbY)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Series Roadmap
 - **Part 1** — Scaffolding Agent + Expo Snack Preview ✅
-- **Part 2** — Editor Agent *(coming soon)*
+- **Part 2** — Editor Agent ✅
 - **Part 3** — Collaboration with YJS *(coming soon)*
 - **Part 4** — Release Build & Distribution *(coming soon)*
 

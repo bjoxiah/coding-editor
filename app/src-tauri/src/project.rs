@@ -1,5 +1,6 @@
 use serde::Serialize;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
@@ -223,6 +224,16 @@ pub async fn create_project(
 #[tauri::command]
 pub async fn read_file(project_path: String, file_path: String) -> Result<String, String> {
     let full = resolve_safe(&project_path, &file_path)?;
+
+    // Read first 512 bytes to sniff if the file is text
+    let mut file = fs::File::open(&full).map_err(|e| e.to_string())?;
+    let mut sniff = [0u8; 512];
+    let n = file.read(&mut sniff).map_err(|e| e.to_string())?;
+
+    if std::str::from_utf8(&sniff[..n]).is_err() {
+        return Err(format!("'{}' appears to be a binary file", file_path));
+    }
+
     fs::read_to_string(&full).map_err(|e| format!("Failed to read '{}': {}", file_path, e))
 }
 

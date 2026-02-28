@@ -59,11 +59,12 @@ const buildExpoUrl = (
 }
 
 export const publishToSnack = async (): Promise<string> => {
+  const runId = crypto.randomUUID();
   const store = useAppStore.getState();
 
   store.setExpoRunning(true)
   // log status
-  store.addProjectLog({ action: 'preview', type: 'status', message: 'Reading project files from disk...' });
+  store.addProjectLog({ runId, action: 'preview', type: 'status', message: 'Reading project files from disk...' });
 
   // read all files
   const allPaths = await invoke<string[]>("list_files", {
@@ -95,7 +96,7 @@ export const publishToSnack = async (): Promise<string> => {
     };
   }
   
-  store.addProjectLog({ action: 'preview', type: 'status', message: `Collected ${Object.keys(files).length} files, publishing to Snack...` });
+  store.addProjectLog({ runId, action: 'preview', type: 'status', message: `Collected ${Object.keys(files).length} files, publishing to Snack...` });
 
   // Expo Snack instance
   const sdkVersion = "54.0.0";
@@ -140,7 +141,7 @@ export const publishToSnack = async (): Promise<string> => {
   console.log("Expo URL:", expoUrl);
 
   store.addExpoUrl(expoUrl);
-  store.addProjectLog({ action: 'preview', type: 'done', message: 'Published to Expo Snack — scan the QR code to preview' });
+  store.addProjectLog({ runId, action: 'preview', type: 'done', message: 'Published to Expo Snack — scan the QR code to preview' });
   store.setExpoRunning(false);
   return expoUrl;
 }

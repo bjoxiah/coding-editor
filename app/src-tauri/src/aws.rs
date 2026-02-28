@@ -75,10 +75,10 @@ pub async fn upload_to_s3(
         .body(ByteStream::from(bytes))
         .send()
         .await
-        .map_err(|e| format!("S3 upload failed: {}", e))?;
+        .map_err(|e| format!("S3 upload failed: {:?}", e))?;
 
     let presign_config = PresigningConfig::expires_in(Duration::from_secs(PRESIGN_DURATION_SECS))
-        .map_err(|e| format!("Presign config error: {}", e))?;
+        .map_err(|e| format!("Presign config error: {:?}", e))?;
 
     let presigned = client
         .get_object()
@@ -86,7 +86,7 @@ pub async fn upload_to_s3(
         .key(&key)
         .presigned(presign_config)
         .await
-        .map_err(|e| format!("Presign failed: {}", e))?;
+        .map_err(|e| format!("Presign failed: {:?}", e))?;
 
     Ok(presigned.uri().to_string())
 }
@@ -111,7 +111,7 @@ pub async fn delete_from_s3(
         .key(&key)
         .send()
         .await
-        .map_err(|e| format!("S3 delete failed: {}", e))?;
+        .map_err(|e| format!("S3 delete failed: {:?}", e))?;
 
     Ok(())
 }

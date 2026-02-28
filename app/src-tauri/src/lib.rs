@@ -39,7 +39,8 @@ pub fn run() {
             aws::upload_to_s3,
             aws::delete_from_s3,
             // agent
-            agent::run_agent
+            agent::scaffold_project,
+            agent::edit_project_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,71 +3,72 @@ import { useAppStore } from "@/store";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
-export interface RunAgentParams {
-  project_path: string;
-  prompt:        string;
-  app_name:      string;
-  brand_color:   string;
-  image_urls:    string[];
+export interface ScaffoldAgentParams {
+  projectPath: string;
+  prompt:      string;
+  appName:     string;
+  brandColor:  string;
+  imageUrls:   string[];
 }
 
-export const runAgent = async (params: RunAgentParams): Promise<void> => {
-  const {
-    setAgentRunning,
-    onAgentFileWrite,
-    loadFileTree,
-    addProjectLog
-  } = useAppStore.getState();
+export interface EditorAgentParams {
+  projectPath:  string;
+  prompt:       string;
+  relativePath: string;
+  content:      string;
+}
+
+const runAgentOperation = async (
+  action:     'scaffold' | 'edit',
+  command:    string,
+  params:     Record<string, unknown>,
+): Promise<void> => {
+  const runId = crypto.randomUUID();
+  const { setAgentRunning, onAgentFileWrite, loadFileTree, addProjectLog } =
+    useAppStore.getState();
 
   setAgentRunning(true);
-  addProjectLog({action: 'scaffold', type: 'status', message: 'Agent started...'});
+  addProjectLog({ runId, action, type: "status", message: "Agent started..." });
 
   let unlistenFn: UnlistenFn | null = null;
 
   const cleanup = () => {
-    if (unlistenFn) unlistenFn();
+    unlistenFn?.();
     setAgentRunning(false);
   };
 
-  // Listen for Tauri events emitted by the Rust SSE consumer
   unlistenFn = await listen<AgentEvent>("agent_event", ({ payload }) => {
     switch (payload.type) {
       case "file_write":
-        // Rust already wrote the file — just update the in-memory editor state
-        addProjectLog({ action: 'scaffold', type: 'file_write', message: `Wrote ${payload.path}` })
+        addProjectLog({ runId, action, type: "file_write", message: `Wrote ${payload.path}` });
         onAgentFileWrite(payload.path, payload.content);
         break;
 
       case "status":
-        addProjectLog({ action: 'scaffold', type: 'status', message: payload.message })
+        addProjectLog({ runId, action, type: "status", message: payload.message });
         break;
 
       case "done":
-        addProjectLog({ action: 'scaffold', type: 'done', message: payload.summary })
-        // Reload file tree so explorer shows all new files
+        addProjectLog({ runId, action, type: "done", message: payload.summary });
         loadFileTree();
-        setAgentRunning(false);
         cleanup();
         break;
 
       case "error":
-        addProjectLog({ action: 'scaffold', type: 'error', message: `Error: ${payload.message}` })
-        setAgentRunning(false);
+        addProjectLog({ runId, action, type: "error", message: payload.message });
         cleanup();
         break;
     }
   });
 
-  // Kick off the Rust agent command operation
-  await invoke("run_agent", {
-    projectPath: params.project_path,
-    prompt:      params.prompt,
-    appName:     params.app_name,
-    brandColor:  params.brand_color,
-    imageUrls:   params.image_urls,
-  }).catch((e) => {
-    addProjectLog({ action: 'scaffold', type: 'error', message: `Failed to start agent: ${e}` })
-    setAgentRunning(false);
+  await invoke(command, params).catch((e) => {
+    addProjectLog({ runId, action, type: "error", message: `Failed to start agent: ${e}` });
     cleanup();
   });
-}
+};
+
+export const scaffoldAgentOperation = (params: ScaffoldAgentParams) =>
+  runAgentOperation("scaffold", "scaffold_project", { ...params });
+
+export const editorAgentOperation = (params: EditorAgentParams) =>
+  runAgentOperation("edit", "edit_project_file", { ...params });

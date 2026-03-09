@@ -9,33 +9,60 @@ import { TabBar } from '../tabbar';
 import { TitleBar } from '../titlebar';
 import { CodeEditor, inferLanguage } from './code-editor';
 import { Sidebar } from '../sidebar';
-
+import { useShallow } from 'zustand/react/shallow';
+import { useCollab } from '@/store/collab';
+import { getYdoc } from '@/store/collab/helpers/session';
+import { observeFile } from '@/store/collab/helpers/observe';
 
 export const EditorComponent = () => {
 	const navigate = useNavigate();
 	const [agentOpen, setAgentOpen] = useState(true);
 	const [activityTabItem, setActivityTabItem] = useState('explorer');
 
-	const {
-		currentProject,
-		activeFile,
-		openTabs,
-		openFile,
-		closeTab,
-		updateFileContent,
-		loadFileTree,
-	} = useAppStore();
+	// Collab — primitives only
+	const status = useCollab((s) => s.status);
+	const provider = useCollab((s) => s.provider);
+	const setActiveFile = useCollab((s) => s.setActiveFile);
 
-	// redirect if no project
+	// App store — NO object selectors, only primitives
+	const hasProject = useAppStore((s) => !!s.currentProject);
+	const activeFilePath = useAppStore((s) => s.activeFile?.path);
+	const activeFileContent = useAppStore((s) => s.activeFile?.content);
+	const activeFileLanguage = useAppStore((s) =>
+		s.activeFile ? inferLanguage(s.activeFile.path) : undefined,
+	);
+	const openTabs = useAppStore(useShallow((s) => s.openTabs));
+
+	// Actions — stable references, safe to select directly
+	const openFile = useAppStore((s) => s.openFile);
+	const closeTab = useAppStore((s) => s.closeTab);
+	const updateFileContent = useAppStore((s) => s.updateFileContent);
+	const loadFileTree = useAppStore((s) => s.loadFileTree);
+
+	const isCollabActive = status === 'active';
+	const collabYdoc = isCollabActive ? getYdoc() : undefined;
+	const collabAwareness = isCollabActive ? provider?.awareness : undefined;
+
+	// Redirect if no project
 	useEffect(() => {
-		if (!currentProject) {
-			navigate('/');
-			return;
-		}
-		loadFileTree();
-	}, []);
+		if (!hasProject) navigate('/');
+	}, [hasProject]);
 
-	if (!currentProject) return null;
+	// Load file tree when project is set
+	useEffect(() => {
+		if (hasProject) {
+			loadFileTree();
+		}
+	}, [hasProject]);
+
+	// Keep awareness in sync when active file changes during collab
+	useEffect(() => {
+		if (!isCollabActive) return;
+		setActiveFile(activeFilePath ?? '');
+		observeFile(activeFilePath ?? '');
+	}, [activeFilePath, isCollabActive]);
+
+	if (!hasProject) return null;
 
 	return (
 		<div
@@ -60,27 +87,33 @@ export const EditorComponent = () => {
 					<ResizablePanel defaultSize={'15%'}>
 						<Sidebar activityTabItem={activityTabItem} />
 					</ResizablePanel>
+
 					<ResizablePanel defaultSize={agentOpen ? '60%' : '85%'}>
-						{/* Editor area */}
 						<div className="flex-1 w-full h-full flex flex-col overflow-hidden">
 							<TabBar
 								tabs={openTabs}
-								activeTab={activeFile?.path || ''}
+								activeTab={activeFilePath || ''}
 								onSelectTab={(path) => openFile(path)}
 								onCloseTab={closeTab}
 							/>
 
-							{activeFile ? (
+							{activeFilePath ? (
 								<CodeEditor
-									language={inferLanguage(activeFile.path)}
-									value={activeFile.content}
-									filePath={activeFile.path}
+									language={activeFileLanguage}
+									value={
+										isCollabActive
+											? undefined
+											: activeFileContent
+									}
+									filePath={activeFilePath}
 									onChange={(v) =>
 										updateFileContent(
-											activeFile.path,
+											activeFilePath,
 											v ?? '',
 										)
 									}
+									ydoc={collabYdoc!}
+									awareness={collabAwareness}
 								/>
 							) : (
 								<div className="flex-1 flex items-center justify-center bg-[#19191d]">
@@ -91,6 +124,7 @@ export const EditorComponent = () => {
 							)}
 						</div>
 					</ResizablePanel>
+
 					{agentOpen && (
 						<ResizablePanel defaultSize={'25%'}>
 							<AgentPanel onClose={() => setAgentOpen(false)} />
@@ -98,9 +132,10 @@ export const EditorComponent = () => {
 					)}
 				</ResizablePanelGroup>
 			</div>
+
 			<StatusBar
-				activeFile={activeFile?.path}
-				language={activeFile ? inferLanguage(activeFile.path) : undefined}
+				activeFile={activeFilePath}
+				language={activeFileLanguage}
 			/>
 		</div>
 	);

@@ -25,6 +25,7 @@ export interface Project {
   created_at: number;
   logs: ProjectLogs[];
   expoUrl: string;
+  owner: string;
 }
 
 export type ProjectLogs = {
@@ -60,6 +61,7 @@ export interface AgentStatusEvent {
 export type AgentEvent = AgentFileEvent | AgentDoneEvent | AgentStatusEvent | AgentErrorEvent;
 
 export interface IAppState {
+  freshRead: boolean,
   projects: Project[];
   currentProject: Project | null;
   activeFile: CodeFile | null;

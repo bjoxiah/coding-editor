@@ -1,17 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { invoke } from '@tauri-apps/api/core';
 import { CodeFile, FileNode, IAppState, Project, ProjectLogs } from '../models';
 import { tauriStorage } from '@/lib/persistence';
 import { toast } from 'sonner';
+import { invoke } from '@tauri-apps/api/core';
 
-// Actions
+// Necessary for web testing
+export const isTauri = () =>
+	typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+export const tauriInvoke = async <T>(cmd: string, args?: any): Promise<T> => {
+	return invoke<T>(cmd, args);
+};
 
 type AppActions = {
 	addProject: (meta: Project) => void;
 	removeProject: (path: string, deleteFromDisk?: boolean) => Promise<void>;
 	setCurrentProject: (project: Project | null) => void;
 	loadFileTree: () => Promise<void>;
+	loadFiles: () => Promise<void>;
 	closeProject: () => void;
 	openFile: (path: string) => Promise<void>;
 	setActiveFile: (file: CodeFile | null) => void;
@@ -23,11 +30,8 @@ type AppActions = {
 	setExpoRunning: (running: boolean) => void;
 	addProjectLog: (entry: ProjectLogs) => void;
 	addExpoUrl: (url: string) => void;
-
 	reset: () => void;
 };
-
-// Initial State
 
 const initialState: IAppState = {
 	projects: [],
@@ -37,9 +41,8 @@ const initialState: IAppState = {
 	agentRunning: false,
 	expoRunning: false,
 	unsavedPaths: new Set<string>(),
+	freshRead: false,
 };
-
-// Store
 
 export const useAppStore = create<IAppState & AppActions>()(
 	persist(
@@ -55,10 +58,13 @@ export const useAppStore = create<IAppState & AppActions>()(
 			removeProject: async (path, deleteFromDisk = false) => {
 				const { projects, currentProject } = get();
 
-				// delete files from disk
 				if (deleteFromDisk) {
 					try {
-						await invoke('delete_project', { projectPath: path });
+						if (isTauri()) {
+							await tauriInvoke('delete_project', {
+								projectPath: path,
+							});
+						}
 					} catch (err) {
 						console.error(
 							'Failed to delete project from disk:',
@@ -90,19 +96,110 @@ export const useAppStore = create<IAppState & AppActions>()(
 				});
 			},
 
+			loadFiles: async () => {
+				const { currentProject } = get();
+				if (!currentProject || !isTauri()) return;
+
+				const IMAGE_EXTENSIONS = new Set([
+					'png',
+					'jpg',
+					'jpeg',
+					'gif',
+					'webp',
+					'svg',
+					'ico',
+					'bmp',
+					'tiff',
+					'tif',
+					'avif',
+					'heic',
+					'heif',
+					// Fonts
+					'ttf',
+					'otf',
+					'woff',
+					'woff2',
+					'eot',
+					// Binary / media
+					'mp4',
+					'mp3',
+					'mov',
+					'avi',
+					'webm',
+					'ogg',
+					'pdf',
+					'zip',
+					'tar',
+					'gz',
+					'exe',
+					'dmg',
+				]);
+
+				const isBinaryFile = (path: string) => {
+					const ext = path.split('.').pop()?.toLowerCase() ?? '';
+					return IMAGE_EXTENSIONS.has(ext);
+				};
+
+				const collectFiles = (nodes: FileNode[]): string[] => {
+					const paths: string[] = [];
+					for (const node of nodes) {
+						if (node.children && node.children.length > 0) {
+							paths.push(...collectFiles(node.children));
+						} else if (!isBinaryFile(node.path)) {
+							paths.push(node.path);
+						}
+					}
+					return paths;
+				};
+
+				// Refresh tree first so we walk the latest file structure
+				await get().loadFileTree();
+
+				// Re-read state after tree update
+				const { currentProject: refreshed } = get();
+				if (!refreshed) return;
+
+				const paths = collectFiles(refreshed.tree ?? []);
+
+				try {
+					const files: CodeFile[] = await Promise.all(
+						paths.map(async (filePath) => {
+							const content = await tauriInvoke<string>(
+								'read_file',
+								{
+									projectPath: refreshed.path,
+									filePath,
+								},
+							);
+							return { path: filePath, content };
+						}),
+					);
+
+					set({
+						currentProject: { ...refreshed, files },
+					});
+				} catch (err: any) {
+					toast.error(err, { position: 'top-center' });
+				}
+			},
+
 			loadFileTree: async () => {
 				const { currentProject } = get();
 				if (!currentProject) return;
 
 				try {
-					const tree = await invoke<FileNode[]>('get_file_tree', {
-						projectPath: currentProject.path,
-					});
+					// In browser, just keep whatever tree we already have
+					if (!isTauri()) return;
+
+					const tree = await tauriInvoke<FileNode[]>(
+						'get_file_tree',
+						{
+							projectPath: currentProject.path,
+						},
+					);
 					set({ currentProject: { ...currentProject, tree } });
 				} catch (err: any) {
-					toast.error(err, {
-						position: 'top-center',
-					});
+					toast.error(err, { position: 'top-center' });
 				}
 			},
 
@@ -118,34 +215,52 @@ export const useAppStore = create<IAppState & AppActions>()(
 			},
 
 			openFile: async (path: string) => {
-				const { currentProject, openTabs } = get();
-				if (!currentProject) return;
+				const {
+					currentProject: initialProject,
+					openTabs,
+					freshRead,
+				} = get();
+				if (!initialProject) return;
 
-				const existing = currentProject.files.find(
-					(f) => f.path === path,
-				);
-				if (existing) {
-					set({
-						activeFile: existing,
-						openTabs: openTabs.includes(path)
-							? openTabs
-							: [...openTabs, path],
-					});
-					return;
+				if (!freshRead) {
+					const existing = initialProject.files.find(
+						(f) => f.path === path,
+					);
+					if (existing) {
+						set({
+							activeFile: existing,
+							openTabs: openTabs.includes(path)
+								? openTabs
+								: [...openTabs, path],
+						});
+						return;
+					}
 				}
 
+				if (freshRead) set({ freshRead: false });
+
 				try {
-					const content = await invoke<string>('read_file', {
-						projectPath: currentProject.path,
-						filePath: path,
-					});
+					const content = isTauri()
+						? await tauriInvoke<string>('read_file', {
+								projectPath: initialProject.path,
+								filePath: path,
+							})
+						: '';
+
+					const { currentProject } = get();
+					if (!currentProject) return;
 
 					const file: CodeFile = { path, content };
 
 					set({
 						currentProject: {
 							...currentProject,
-							files: [...currentProject.files, file],
+							files: [
+								...currentProject.files.filter(
+									(f) => f.path !== path,
+								),
+								file,
+							],
 						},
 						activeFile: file,
 						openTabs: openTabs.includes(path)
@@ -153,34 +268,35 @@ export const useAppStore = create<IAppState & AppActions>()(
 							: [...openTabs, path],
 					});
 				} catch (err: any) {
-					toast.error(err, {
-						position: 'top-center',
-					});
+					toast.error(err, { position: 'top-center' });
 				}
 			},
 
-			setActiveFile: (file: CodeFile | null) => set({ activeFile: file }),
+			setActiveFile: (file) => set({ activeFile: file }),
 
 			updateFileContent: (path, content) => {
-        const { currentProject, activeFile, unsavedPaths } = get();
-        if (!currentProject) return;
+				const { currentProject, activeFile, unsavedPaths } = get();
+				if (!currentProject) return;
 
-        const existing = currentProject.files.find((f) => f.path === path);
+				const existing = currentProject.files.find(
+					(f) => f.path === path,
+				);
+				if (existing?.content === content) return;
 
-        if (existing?.content === content) return;
-
-        set({
-          unsavedPaths: new Set([...unsavedPaths, path]),
-          currentProject: {
-            ...currentProject,
-            files: currentProject.files.map((f) =>
-              f.path === path ? { ...f, content } : f,
-            ),
-          },
-          activeFile:
-            activeFile?.path === path ? { ...activeFile, content } : activeFile,
-        });
-      },
+				set({
+					unsavedPaths: new Set([...unsavedPaths, path]),
+					currentProject: {
+						...currentProject,
+						files: currentProject.files.map((f) =>
+							f.path === path ? { ...f, content } : f,
+						),
+					},
+					activeFile:
+						activeFile?.path === path
+							? { ...activeFile, content }
+							: activeFile,
+				});
+			},
 
 			closeTab: (path) => {
 				const { openTabs, activeFile, unsavedPaths } = get();
@@ -210,20 +326,18 @@ export const useAppStore = create<IAppState & AppActions>()(
 				if (!currentProject || !activeFile) return;
 
 				try {
-					await invoke('save_file', {
-						projectPath: currentProject.path,
-						filePath: activeFile.path,
-						content: activeFile.content,
-					});
-
-					// Remove only the saved file from dirty set
+					if (isTauri()) {
+						await tauriInvoke('save_file', {
+							projectPath: currentProject.path,
+							filePath: activeFile.path,
+							content: activeFile.content,
+						});
+					}
 					const next = new Set(unsavedPaths);
 					next.delete(activeFile.path);
 					set({ unsavedPaths: next });
 				} catch (err: any) {
-					toast.error(err, {
-						position: 'top-center',
-					});
+					toast.error(err, { position: 'top-center' });
 				}
 			},
 
@@ -233,7 +347,7 @@ export const useAppStore = create<IAppState & AppActions>()(
 
 				const file: CodeFile = { path, content };
 
-        const nextUnsaved = new Set(unsavedPaths);
+				const nextUnsaved = new Set(unsavedPaths);
 				nextUnsaved.delete(path);
 
 				const existingIndex = currentProject.files.findIndex(
@@ -249,7 +363,7 @@ export const useAppStore = create<IAppState & AppActions>()(
 				set({
 					currentProject: { ...currentProject, files: updatedFiles },
 					activeFile: file,
-          unsavedPaths: nextUnsaved,
+					unsavedPaths: nextUnsaved,
 					openTabs: openTabs.includes(path)
 						? openTabs
 						: [...openTabs, path],
@@ -273,7 +387,10 @@ export const useAppStore = create<IAppState & AppActions>()(
 					logs: [
 						...currentProject.logs.filter(
 							(x) =>
-								!(x.runId === entry.runId && x.type === 'error')
+								!(
+									x.runId === entry.runId &&
+									x.type === 'error'
+								),
 						),
 						log,
 					],
@@ -292,13 +409,14 @@ export const useAppStore = create<IAppState & AppActions>()(
 				if (!currentProject) return;
 
 				const updatedProject = { ...currentProject, expoUrl: url };
-
 				set({ currentProject: updatedProject });
+
 				const { projects } = get();
-				const updatedProjects = projects.map((p) =>
-					p.id === updatedProject.id ? updatedProject : p,
-				);
-				set({ projects: updatedProjects });
+				set({
+					projects: projects.map((p) =>
+						p.id === updatedProject.id ? updatedProject : p,
+					),
+				});
 			},
 
 			reset: () => set(initialState),
@@ -306,9 +424,7 @@ export const useAppStore = create<IAppState & AppActions>()(
 		{
 			name: 'app-store',
 			storage: tauriStorage,
-			partialize: (state) => ({
-				projects: state.projects,
-			}),
+			partialize: (state) => ({ projects: state.projects }),
 		},
 	),
 );

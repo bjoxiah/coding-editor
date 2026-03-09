@@ -1,3 +1,5 @@
 .vite
 .vscode
 *.lock
+.env
+node_modules

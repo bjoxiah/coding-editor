@@ -8,7 +8,7 @@ An AI-powered desktop coding editor that scaffolds React Native projects using n
 ## Series Roadmap
 - **Part 1** — Scaffolding Agent + Expo Snack Preview ✅
 - **Part 2** — Editor Agent ✅
-- **Part 3** — Collaboration with YJS *(coming soon)*
+- **Part 3** — Collaboration with YJS ✅
 - **Part 4** — Release Build & Distribution *(coming soon)*
 
 ## Tech Stack
@@ -20,6 +20,7 @@ An AI-powered desktop coding editor that scaffolds React Native projects using n
 | Backend | FastAPI + Python |
 | AI | PydanticAI via OpenRouter |
 | Preview | Expo Snack |
+| Socket | Nodejs |
 
 ## Prerequisites
 
@@ -69,6 +70,34 @@ poetry run serve
 
 Both the desktop app and backend must be running simultaneously. Once up, open the desktop app, configure the API URL in settings, and start scaffolding.
 
+### 4. Socket
+
+```bash
+cd socket
+```
+
+Create a `.env` file inside the `socket` folder:
+
+```env
+PORT=port-to-use
+```
+
+Then start the server:
+
+```bash
+pnpm dev
+```
+
+Remember to update the settings for the web socket url by clicking the gear icon on the `editor` page.
+
+If you want to run the react frontend part of the application on the web without the rust backend:
+
+```bash
+cd app && pnpm dev --port 1421 
+```
+
+use any port you want.
+
 ## Project Structure
 
 ```
@@ -77,6 +106,7 @@ coding-editor/
 │   ├── src/             # React source
 │   └── src-tauri/       # Rust backend
 └── backend/             # FastAPI + PydanticAI agent
+└── socket/              # Nodejs
 ```
 
 ## Contributing

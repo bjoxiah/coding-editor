@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "../../store";
+import { isTauri, useAppStore } from "../../store";
 import { ArrowLeft, Play, Loader2, Save } from "lucide-react";
 import { publishToSnack } from "../../service";
+import { useSettings } from "@/store/settings";
 
 export const TitleBar = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export const TitleBar = () => {
 
   const isFileDirty = !!(activeFile && unsavedPaths.has(activeFile.path));
   const anyDirty    = unsavedPaths.size > 0;
+  const canSave = isTauri() && currentProject?.owner == useSettings().settings?.username;
 
   const handleClose = () => {
     closeProject();
@@ -36,6 +38,8 @@ export const TitleBar = () => {
 
   // Cmd+S / Ctrl+S
   useEffect(() => {
+    if (!canSave) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
@@ -70,7 +74,7 @@ export const TitleBar = () => {
                 {currentProject.name}
               </span>
               {/* Dot indicates any unsaved file across all tabs */}
-              {anyDirty && (
+              {anyDirty && canSave && (
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400/70 shrink-0" />
               )}
             </div>
@@ -87,10 +91,10 @@ export const TitleBar = () => {
             {/* Save — active only when current file is dirty */}
             <button
               onClick={handleSave}
-              disabled={!isFileDirty || agentRunning || expoRunning}
+              disabled={!isFileDirty || !canSave || agentRunning || expoRunning}
               title="Save (⌘S)"
               className={`h-7 px-3 text-[11px] font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                isFileDirty && !agentRunning && !expoRunning
+                isFileDirty && canSave && !agentRunning && !expoRunning
                   ? "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 cursor-pointer"
                   : "bg-white/3 text-neutral-700 cursor-not-allowed"
               }`}
@@ -102,9 +106,9 @@ export const TitleBar = () => {
             {/* Run */}
             <button
               onClick={handleRun}
-              disabled={agentRunning || expoRunning}
+              disabled={agentRunning || !canSave|| expoRunning}
               className={`h-7 px-3 text-[11px] font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                agentRunning || expoRunning
+                agentRunning || !canSave|| expoRunning
                   ? "bg-white/3 text-neutral-700 cursor-not-allowed"
                   : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer"
               }`}

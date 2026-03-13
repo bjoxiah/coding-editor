@@ -1,27 +1,28 @@
-import { Project, FileNode } from "@/models";
-import { useAppStore } from "@/store";
-import { invoke } from "@tauri-apps/api/core";
+import { Project } from "@/models";
+import { isTauri, useAppStore } from "@/store";
+import { useSettings } from "@/store/settings";
 import { formatDistance } from "date-fns";
 import { FolderOpen, Trash2, ChevronRight, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const ProjectCard = ({ project }: { project: Project }) => {
   const navigate = useNavigate();
-  const { setCurrentProject, removeProject } = useAppStore();
+  const {settings} = useSettings();
+  const { setCurrentProject, removeProject, loadFiles } = useAppStore();
 
   const handleOpen = async () => {
     try {
-      const tree = await invoke<FileNode[]>("get_file_tree", {
-        projectPath: project.path,
-      });
-
-      setCurrentProject({...project, tree});
-
-      navigate("/editor");
+        if (isTauri() && settings!.username === project.owner) {
+            setCurrentProject(project);
+            await loadFiles();
+        } else {
+            setCurrentProject(project);
+        }
+        navigate('/editor');
     } catch (err) {
-      console.error("Failed to open project:", err);
+        console.error('Failed to open project:', err);
     }
-  };
+};
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();

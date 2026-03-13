@@ -20,7 +20,7 @@ export const AgentPanel = ({ onClose }: AgentPanelProps) => {
 	const [input, setInput] = useState('');
 	const [editorPrompt, setEditorPrompt] = useState('');
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const inputRef = useRef<HTMLTextAreaElement>(null)
+	const inputRef = useRef<HTMLTextAreaElement>(null);
 
 	const { currentProject, agentRunning, activeFile } = useAppStore();
 	const logs = currentProject?.logs ?? [];

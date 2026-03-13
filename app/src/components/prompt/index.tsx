@@ -141,7 +141,8 @@ export const PromptComponent = () => {
 
       const s3ImageKeys = images.filter((i) => i.s3Key).map((i) => i.s3Key);
       const proj = {
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID().replace(/-/g, '').slice(0, 9), // shorter id for collab workspace code
+        owner: settings?.username,
         name,
         path: projectPath,
         prompt,

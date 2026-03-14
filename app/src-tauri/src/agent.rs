@@ -1,36 +1,36 @@
-use tokio::fs;
+use crate::config::load_settings;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
-use crate::config::load_settings;
+use tokio::fs;
 
 const MAX_FRAME_SIZE: usize = 10 * 1024 * 1024; // 10MB
 
 #[derive(Debug, Serialize)]
 struct ScaffoldRequest {
     project_path: String,
-    user_prompt:  String,
-    app_name:     String,
-    brand_color:  String,
-    image_urls:   Vec<String>,
+    user_prompt: String,
+    app_name: String,
+    brand_color: String,
+    image_urls: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
 struct EditRequest {
-    project_path:  String,
+    project_path: String,
     relative_path: String,
-    content:       String,
-    user_prompt:   String,
+    content: String,
+    user_prompt: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AgentEvent {
     FileWrite { path: String, content: String },
-    Status    { message: String },
-    Done      { summary: String, files: Vec<String> },
-    Error     { message: String },
+    Status { message: String },
+    Done { summary: String, files: Vec<String> },
+    Error { message: String },
 }
 
 fn find_double_newline(buf: &[u8]) -> Option<usize> {
@@ -41,10 +41,14 @@ async fn secure_write_file(base_dir: &Path, rel_path: &str, content: &str) -> Re
     let target_path = base_dir.join(rel_path);
 
     let parent = target_path.parent().ok_or("Invalid file path")?;
-    fs::create_dir_all(parent).await.map_err(|e| e.to_string())?;
+    fs::create_dir_all(parent)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let canonical_parent = fs::canonicalize(parent).await.map_err(|e| e.to_string())?;
-    let canonical_base   = fs::canonicalize(base_dir).await.map_err(|e| e.to_string())?;
+    let canonical_base = fs::canonicalize(base_dir)
+        .await
+        .map_err(|e| e.to_string())?;
 
     if !canonical_parent.starts_with(&canonical_base) {
         return Err("Security violation: path traversal detected".into());
@@ -56,7 +60,7 @@ async fn secure_write_file(base_dir: &Path, rel_path: &str, content: &str) -> Re
 }
 
 async fn process_stream(
-    app:       &AppHandle,
+    app: &AppHandle,
     base_path: &Path,
     mut response: Response,
 ) -> Result<(), String> {
@@ -89,7 +93,8 @@ async fn process_stream(
             match &event {
                 AgentEvent::FileWrite { path, content } => {
                     if let Err(e) = secure_write_file(base_path, path, content).await {
-                        app.emit("agent_event", AgentEvent::Error { message: e }).ok();
+                        app.emit("agent_event", AgentEvent::Error { message: e })
+                            .ok();
                         continue;
                     }
                     app.emit("agent_event", event).ok();
@@ -105,22 +110,26 @@ async fn process_stream(
         }
     }
 
-    app.emit("agent_event", AgentEvent::Error {
-        message: "Stream closed unexpectedly".into(),
-    }).ok();
+    app.emit(
+        "agent_event",
+        AgentEvent::Error {
+            message: "Stream closed unexpectedly".into(),
+        },
+    )
+    .ok();
 
     Ok(())
 }
 
 #[tauri::command]
 pub async fn scaffold_project(
-    app:          AppHandle,
-    client:       tauri::State<'_, Client>,
+    app: AppHandle,
+    client: tauri::State<'_, Client>,
     project_path: String,
-    prompt:       String,
-    app_name:     String,
-    brand_color:  String,
-    image_urls:   Vec<String>,
+    prompt: String,
+    app_name: String,
+    brand_color: String,
+    image_urls: Vec<String>,
 ) -> Result<(), String> {
     let settings = load_settings(app.clone()).await?;
 
@@ -152,12 +161,12 @@ pub async fn scaffold_project(
 
 #[tauri::command]
 pub async fn edit_project_file(
-    app:           AppHandle,
-    client:        tauri::State<'_, Client>,
-    project_path:  String,
+    app: AppHandle,
+    client: tauri::State<'_, Client>,
+    project_path: String,
     relative_path: String,
-    content:       String,
-    prompt:        String,
+    content: String,
+    prompt: String,
 ) -> Result<(), String> {
     let settings = load_settings(app.clone()).await?;
 

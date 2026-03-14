@@ -150,7 +150,12 @@ Each release is triggered by pushing a git tag. The workflow builds the app acro
 
 ### Step 1 — Generate app icons
 
-Your source image must be at least **1024×1024px PNG**. Run this from inside the `app/` folder:
+I get my source icon image from https://icon.kitchen which usually comes as a `.icns` image then I convert to `.png` by running this:
+
+```bash
+sips -s format png ~/Desktop/your-icon.icns --out ~/Desktop/source.png
+```
+I copy the image to the icons folder inside `src-tauri` and then run this from inside the `app/` folder:
 
 ```bash
 pnpm tauri icon src-tauri/icons/source.png

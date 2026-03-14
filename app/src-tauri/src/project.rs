@@ -394,10 +394,11 @@ pub async fn open_in_terminal(dir_path: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         // linux
+        let xterm_cmd = format!("cd '{}' && $SHELL", dir_path);
         let terminals = [
             ("gnome-terminal", vec!["--working-directory", &dir_path]),
             ("konsole", vec!["--workdir", &dir_path]),
-            ("xterm", vec!["-e", &format!("cd '{}' && $SHELL", dir_path)]),
+            ("xterm", vec!["-e", &xterm_cmd]),
             ("x-terminal-emulator", vec![]),
         ];
 

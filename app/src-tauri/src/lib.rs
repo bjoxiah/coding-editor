@@ -1,10 +1,10 @@
-mod project;
-mod config;
-mod aws;
 mod agent;
+mod aws;
+mod config;
+mod project;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {    
+pub fn run() {
     let client = reqwest::Client::builder()
         .connect_timeout(std::time::Duration::from_secs(10))
         .timeout(std::time::Duration::from_secs(300)) // generous for streaming
@@ -12,6 +12,7 @@ pub fn run() {
         .expect("Failed to build HTTP client");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(client)
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())

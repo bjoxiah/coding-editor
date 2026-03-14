@@ -1,14 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store';
 import { Plus, FolderOpen, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectCard } from './project-card';
 import { JoinWorkspace } from './workspace';
+import { getVersion } from '@tauri-apps/api/app'
 
 export const DashboardComponent = () => {
 	const navigate = useNavigate();
 	const { projects } = useAppStore();
 	const [showJoin, setShowJoin] = useState(false);
+	const [version, setVersion] = useState('');
+
+	useEffect(() => {
+		getVersion().then(setVersion)
+	}, [])
 
 	return (
 		<div className="h-screen w-full bg-[#111113] flex flex-col">
@@ -26,7 +32,7 @@ export const DashboardComponent = () => {
 			<div className="flex items-center justify-between px-8 py-6 border-b border-white/6">
 				<div>
 					<h1 className="text-xl font-semibold text-neutral-100 tracking-tight">
-						Coding Editor
+						Coding Editor - v{version}
 					</h1>
 					<p className="text-xs text-neutral-600 mt-0.5">
 						Your React Native projects

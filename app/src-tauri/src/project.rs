@@ -16,13 +16,7 @@ pub struct FileNode {
     pub children: Option<Vec<FileNode>>,
 }
 
-const IGNORED_DIRS: &[&str] = &[
-    "node_modules",
-    ".vscode",
-    ".expo",
-    ".git",
-    ".DS_Store",
-];
+const IGNORED_DIRS: &[&str] = &["node_modules", ".vscode", ".expo", ".git", ".DS_Store"];
 
 fn resolve_safe(project_path: &str, relative: &str) -> Result<PathBuf, String> {
     let base = PathBuf::from(project_path)
@@ -58,7 +52,8 @@ fn resolve_safe(project_path: &str, relative: &str) -> Result<PathBuf, String> {
 fn get_lang(filename: &str) -> Option<String> {
     let ext = filename.rsplit('.').next()?.to_lowercase();
     match ext.as_str() {
-        "tsx" | "ts" | "jsx" | "js" | "css" | "json" | "html" | "md" | "svg" | "yaml" | "yml" | "lock" => Some(ext),
+        "tsx" | "ts" | "jsx" | "js" | "css" | "json" | "html" | "md" | "svg" | "yaml" | "yml"
+        | "lock" => Some(ext),
         _ => None,
     }
 }

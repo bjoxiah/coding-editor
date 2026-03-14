@@ -1,11 +1,6 @@
 use aws_config::BehaviorVersion;
 use aws_credential_types::Credentials;
-use aws_sdk_s3::{
-    config::Region,
-    presigning::PresigningConfig,
-    primitives::ByteStream,
-    Client,
-};
+use aws_sdk_s3::{config::Region, presigning::PresigningConfig, primitives::ByteStream, Client};
 use std::time::Duration;
 use tauri::AppHandle;
 
@@ -17,7 +12,9 @@ async fn s3_client(app: &AppHandle) -> Result<(Client, String), String> {
     let settings = load_settings(app.clone()).await?;
 
     if settings.aws_access_key_id.is_empty() || settings.aws_secret_access_key.is_empty() {
-        return Err("AWS credentials not configured. Please complete setup in Settings.".to_string());
+        return Err(
+            "AWS credentials not configured. Please complete setup in Settings.".to_string(),
+        );
     }
     if settings.aws_region.is_empty() {
         return Err("AWS region not configured.".to_string());
@@ -44,7 +41,6 @@ async fn s3_client(app: &AppHandle) -> Result<(Client, String), String> {
     Ok((client, settings.aws_bucket))
 }
 
-
 #[tauri::command]
 pub async fn upload_to_s3(
     app: AppHandle,
@@ -54,11 +50,7 @@ pub async fn upload_to_s3(
 ) -> Result<String, String> {
     let (client, bucket) = s3_client(&app).await?;
 
-    let ext = file_name
-        .rsplit('.')
-        .next()
-        .unwrap_or("bin")
-        .to_lowercase();
+    let ext = file_name.rsplit('.').next().unwrap_or("bin").to_lowercase();
 
     let key = format!(
         "images/{}/{}.{}",
@@ -92,10 +84,7 @@ pub async fn upload_to_s3(
 }
 
 #[tauri::command]
-pub async fn delete_from_s3(
-    app: AppHandle,
-    url: String,
-) -> Result<(), String> {
+pub async fn delete_from_s3(app: AppHandle, url: String) -> Result<(), String> {
     let (client, bucket) = s3_client(&app).await?;
 
     let key = url
@@ -115,4 +104,3 @@ pub async fn delete_from_s3(
 
     Ok(())
 }
-

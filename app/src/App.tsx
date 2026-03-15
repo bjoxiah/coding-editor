@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
@@ -9,18 +9,31 @@ import { ConfigurationPage } from "./pages/config";
 import { RequireGuest } from "./providers/guest";
 import { RequireConfig } from "./providers/config";
 import { Toaster } from "sonner";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 
+const checkForUpdates = async () => {
+  const update = await check();
+  if (update) {
+    const yes = confirm(`Version ${update.version} is available. Install now?`);
+    if (yes) {
+      await update.downloadAndInstall();
+      await relaunch();
+    }
+  }
+}
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+const App = () => {
+  useEffect(() => {
+    checkForUpdates();
+  }, []);
+
+  return (
     <BrowserRouter>
       <Routes>
-        {/* Only reachable when NOT yet configured */}
         <Route element={<RequireGuest />}>
           <Route path="/config" element={<ConfigurationPage />} />
         </Route>
-
-        {/* Only reachable when configured */}
         <Route element={<RequireConfig />}>
           <Route path="/"       element={<DashboardPage />} />
           <Route path="/new"    element={<PromptPage />} />
@@ -29,5 +42,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </Routes>
       <Toaster />
     </BrowserRouter>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
   </React.StrictMode>
 );

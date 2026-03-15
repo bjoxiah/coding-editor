@@ -408,7 +408,7 @@ Then bump with:
 
 ```bash
 cd app
-pnpm version patch   # 1.0.0 → 1.0.1
+npm version patch   # 1.0.0 → 1.0.1
 ```
 
 ---

@@ -19,7 +19,7 @@ export const DashboardComponent = () => {
 	}, []);
 
 	return (
-		<div className="h-screen w-full bg-[#111113] flex flex-col">
+		<div className="min-h-screen w-full bg-[#111113] flex flex-col">
 			{/* Subtle grid background */}
 			<div
 				className="absolute inset-0 pointer-events-none opacity-[0.025]"
@@ -74,9 +74,9 @@ export const DashboardComponent = () => {
 			/>
 
 			{/* Projects Grid */}
-			<div className="flex-1 overflow-y-auto px-8 py-6">
+			<div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-8 py-6">
 				{projects.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full gap-4">
+					<div className="flex flex-col flex-1 items-center justify-center w-full h-full gap-4">
 						<div className="w-16 h-16 rounded-2xl bg-white/3 border border-white/6 flex items-center justify-center">
 							<FolderOpen
 								size={24}

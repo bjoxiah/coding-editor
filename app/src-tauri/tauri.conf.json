@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "coding-editor",
+  "productName": "Coding Editor",
   "version": "../package.json",
   "identifier": "dev.joxiah.coding-editor",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "coding-editor",
+        "title": "Coding Editor",
         "width": 800,
         "height": 600,
         "decorations": true

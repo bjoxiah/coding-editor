@@ -12,6 +12,7 @@ pub fn run() {
         .expect("Failed to build HTTP client");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(client)
         .plugin(tauri_plugin_opener::init())

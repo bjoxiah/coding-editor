@@ -180,7 +180,7 @@ export const PromptComponent = () => {
   const stepIcons = [Copy, Search, Sparkles];
 
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-[#111113] overflow-hidden">
+    <div className="w-full min-h-screen flex items-center justify-center bg-[#111113] overflow-hidden">
 
       {/* Subtle grid background */}
       <div

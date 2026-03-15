@@ -165,7 +165,7 @@ export const ConfigurationComponent = () => {
 	const handleSave = handleSubmit(onSubmit);
 
 	return (
-		<div className="w-full h-screen flex items-center justify-center bg-[#111113] overflow-hidden">
+		<div className="w-full min-h-screen flex items-center justify-center bg-[#111113] overflow-hidden">
 			{/* Subtle grid background */}
 			<div
 				className="absolute inset-0 pointer-events-none opacity-[0.025]"

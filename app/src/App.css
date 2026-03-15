@@ -126,12 +126,16 @@
   }
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-  overflow: hidden;
   overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100%;
+  width: 100%;
+  overflow-y: auto;
 }

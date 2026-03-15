@@ -38,4 +38,7 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  optimizeDeps: {
+    exclude: ['monaco-editor']
+  }
 }));

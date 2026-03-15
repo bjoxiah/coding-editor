@@ -27,12 +27,8 @@ const checkForUpdates = async () => {
         },
         duration: Infinity,
       });
-    } else {
-      toast("App is up to date");
     }
-  } catch (e) {
-    toast(`Updater error: ${e}`);
-  }
+  } catch (e) {}
 }
 
 const App = () => {

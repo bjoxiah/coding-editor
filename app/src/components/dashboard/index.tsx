@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store';
-import { Plus, FolderOpen, Users } from 'lucide-react';
+import { Plus, FolderOpen, Users, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectCard } from './project-card';
 import { JoinWorkspace } from './workspace';
-import { getVersion } from '@tauri-apps/api/app'
+import { getVersion } from '@tauri-apps/api/app';
+import { SettingsModal } from '../settings';
 
 export const DashboardComponent = () => {
 	const navigate = useNavigate();
 	const { projects } = useAppStore();
 	const [showJoin, setShowJoin] = useState(false);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [version, setVersion] = useState('');
 
 	useEffect(() => {
-		getVersion().then(setVersion)
-	}, [])
+		getVersion().then(setVersion);
+	}, []);
 
 	return (
 		<div className="h-screen w-full bg-[#111113] flex flex-col">
@@ -55,8 +57,21 @@ export const DashboardComponent = () => {
 						<Plus size={14} />
 						New Project
 					</button>
+					<button
+						onClick={() => setSettingsOpen(!settingsOpen)}
+						className="w-9 h-9 flex items-center justify-center rounded-lg border border-white/8 bg-white/4 text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.07] hover:border-white/12 transition-all cursor-pointer"
+					>
+						<Settings size={16} />
+					</button>
 				</div>
 			</div>
+
+			{/* Settings modal */}
+			<SettingsModal
+				open={settingsOpen}
+				onOpenChange={setSettingsOpen}
+				initialTab="profile"
+			/>
 
 			{/* Projects Grid */}
 			<div className="flex-1 overflow-y-auto px-8 py-6">

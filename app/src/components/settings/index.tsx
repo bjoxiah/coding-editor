@@ -220,7 +220,7 @@ export const SettingsModal = ({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="bg-[#141416] border-white/10 p-0 gap-0 max-w-lg overflow-hidden shadow-2xl shadow-black/60">
+			<DialogContent showCloseButton={false} className="bg-[#141416] border-white/10 p-0 gap-0 max-w-lg overflow-hidden shadow-2xl shadow-black/60">
 				{/* Header */}
 				<DialogHeader className="px-5 pt-5 pb-4 border-b border-white/6">
 					<DialogTitle className="flex items-center gap-2 text-[13.5px] font-semibold text-neutral-200">

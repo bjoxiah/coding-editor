@@ -167,14 +167,14 @@ This auto-generates all required icon sizes into `app/src-tauri/icons/`. No manu
 
 ### Step 2 — Configure CSP
 
-The CSP (Content Security Policy) controls what network connections the Tauri webview is allowed to make. Since all FastAPI calls go through Rust, only the YJS WebSocket URL needs to be listed.
+The CSP (Content Security Policy) controls what network connections the Tauri webview is allowed to make. Since all FastAPI calls go through Rust, only the YJS WebSocket URL and the images url need to be listed.
 
 In `app/src-tauri/tauri.conf.json`:
 
 ```json
 "app": {
   "security": {
-    "csp": "default-src 'self'; connect-src 'self' ws://localhost:1234; style-src 'self' 'unsafe-inline'"
+    "csp": "default-src 'self'; connect-src 'self' ws://localhost:1234 https://*.amazonaws.com; img-src 'self' blob: data: https://*.amazonaws.com https://api.qrserver.com; style-src 'self' 'unsafe-inline'"
   }
 }
 ```
@@ -283,7 +283,7 @@ base64 -i ~/Desktop/certificate.p12 | pbcopy
 #### 4d. Get your app-specific password
 
 1. Go to [appleid.apple.com](https://appleid.apple.com) → **Sign-In and Security** → **App-Specific Passwords** → **Generate**
-2. Name it `tauri-ci` → copy the `xxxx-xxxx-xxxx-xxxx` password
+2. Name it `tauri-ci` or whatever makes sense to you → copy the `xxxx-xxxx-xxxx-xxxx` password
 
 ---
 
@@ -466,7 +466,7 @@ Then retag and push again. Only do this with beta/prerelease tags — never dele
 
 ## Contributing
 
-This project is under active development. Feel free to open issues or PRs — follow along with the series for context on what's coming next.
+This project is under active development. Feel free to open issues or PRs.
 
 ---
 

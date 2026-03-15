@@ -15,7 +15,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 const checkForUpdates = async () => {
   const update = await check();
   if (update) {
-    toast(`Version ${''} available`, {
+    toast(`Version ${update.version} available`, {
       description: "A new update is ready to install.",
       action: {
         label: "Update now",

@@ -13,19 +13,25 @@ import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 
 const checkForUpdates = async () => {
-  const update = await check();
-  if (update) {
-    toast(`Version ${update.version} available`, {
-      description: "A new update is ready to install.",
-      action: {
-        label: "Update now",
-        onClick: async () => {
-          await update.downloadAndInstall();
-          await relaunch();
+  try {
+    const update = await check();
+    if (update) {
+      toast(`Version ${update.version} available`, {
+        description: "A new update is ready to install.",
+        action: {
+          label: "Update now",
+          onClick: async () => {
+            await update.downloadAndInstall();
+            await relaunch();
+          },
         },
-      },
-      duration: Infinity,  // stays until user acts
-    });
+        duration: Infinity,
+      });
+    } else {
+      toast("App is up to date");
+    }
+  } catch (e) {
+    toast(`Updater error: ${e}`);
   }
 }
 

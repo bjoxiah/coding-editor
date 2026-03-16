@@ -30,7 +30,6 @@ export const onRoomOpen = (socketId: string, ws: WebSocket, msg: any) => {
 	clients.get(socketId)!.workspaceCode = msg.workspaceCode;
 	clients.get(socketId)!.username = msg.username;
 	send(ws, { type: 'room:opened' });
-	console.log(`[open]   ${msg.workspaceCode}  (${msg.username})`);
 }
 
 // Collaborator knocks
@@ -57,7 +56,6 @@ export const onKnock = (socketId: string, ws: WebSocket, msg: any) => {
 		requestId,
 		username: msg.username,
 	});
-	console.log(`[knock]  ${msg.username} → ${msg.workspaceCode}`);
 }
 
 // Owner accepts
@@ -81,7 +79,6 @@ export const onAccept = (socketId: string, msg: any) => {
 		workspaceCode: msg.workspaceCode,
 		snapshot: msg.snapshot,
 	});
-	console.log(`[accept] ${req.username} → ${msg.workspaceCode}`);
 }
 
 // Owner declines
@@ -94,7 +91,6 @@ export const onDecline = (socketId: string, msg: any) => {
 
 	room.pending.delete(msg.requestId);
 	send(req.ws, { type: 'room:declined' });
-	console.log(`[decline] ${msg.requestId}`);
 }
 
 // Owner kicks a member by username
@@ -107,7 +103,6 @@ export const onKick = (socketId: string, msg: any) => {
 		if (member.username === msg.username) {
 			send(member.ws, { type: 'room:kicked' });
 			room.members.delete(memberSocketId);
-			console.log(`[kick]   ${msg.username} from ${msg.workspaceCode}`);
 			break;
 		}
 	}
@@ -124,7 +119,6 @@ export const onRoomClose = (socketId: string, msg: any) => {
 	}
 
 	rooms.delete(msg.workspaceCode);
-	console.log(`[close]  ${msg.workspaceCode}`);
 }
 
 // Disconnect
@@ -143,13 +137,9 @@ export const handleDisconnect = (socketId: string) => {
 			send(member.ws, { type: 'room:closed' });
 		}
 		rooms.delete(client.workspaceCode);
-		console.log(`[owner disconnected] ${client.workspaceCode}`);
 	} else {
 		// Member left
 		room.members.delete(socketId);
-		console.log(
-			`[member left] ${client.username} from ${client.workspaceCode}`,
-		);
 	}
 }
 

@@ -16,9 +16,6 @@ setPersistence({
 	bindState: async (roomName, ydoc) => {
 		const persistedYdoc = await ldb.getYDoc(roomName);
 		const existing = Y.encodeStateAsUpdate(persistedYdoc);
-		console.log(
-			`[leveldb] binding room: ${roomName} — existing: ${existing.byteLength} bytes`,
-		);
 		Y.applyUpdate(ydoc, existing);
 		ydoc.on('update', (update: Uint8Array) => {
 			ldb.storeUpdate(roomName, update);
@@ -82,10 +79,4 @@ controlWss.on('connection', (ws) => {
 // Boot
 
 const PORT = process.env.PORT ?? 1234;
-server.listen(PORT, () => {
-	console.log(`[socket] control     ws://localhost:${PORT}/collab`);
-	console.log(
-		`[socket] yjs         ws://localhost:${PORT}/yjs/:workspaceCode`,
-	);
-	console.log(`[socket] health      http://localhost:${PORT}/health`);
-});
+server.listen(PORT, () => {});

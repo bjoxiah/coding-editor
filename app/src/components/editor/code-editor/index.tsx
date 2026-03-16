@@ -151,10 +151,6 @@ export const CodeEditor = ({
 			);
 		}
 
-		console.log(
-			`[binding] attach ${path} — yText:${yText.length} model:${model.getValueLength()}`,
-		);
-
 		bindingRef.current = new MonacoBinding(
 			yText,
 			model,

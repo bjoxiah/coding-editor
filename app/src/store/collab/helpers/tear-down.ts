@@ -34,5 +34,4 @@ export const teardown = (removeProject = false) => {
 		}));
 	}
 
-	console.log('[collab] session torn down');
 };

@@ -84,7 +84,6 @@ export const publishToSnack = async (): Promise<string> => {
       });
       files[filePath] = { type: "CODE", contents: content };
     } catch(err) {
-      console.error(`Error reading file: ${filePath}`, err);
       // skip unreadable files
     }
   }
@@ -137,9 +136,6 @@ export const publishToSnack = async (): Promise<string> => {
 
   // Build the same exp:// URL that snack.expo.dev uses in its QR
   const expoUrl = buildExpoUrl(sdkVersion, id, channel);
-
-  console.log("Published to Snack:", id);
-  console.log("Expo URL:", expoUrl);
 
   store.addExpoUrl(expoUrl);
   store.addProjectLog({ runId, action: 'preview', type: 'done', message: 'Published to Expo Snack — scan the QR code to preview' });

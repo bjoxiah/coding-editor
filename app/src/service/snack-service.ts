@@ -83,7 +83,8 @@ export const publishToSnack = async (): Promise<string> => {
         filePath,
       });
       files[filePath] = { type: "CODE", contents: content };
-    } catch {
+    } catch(err) {
+      console.error(`Error reading file: ${filePath}`, err);
       // skip unreadable files
     }
   }

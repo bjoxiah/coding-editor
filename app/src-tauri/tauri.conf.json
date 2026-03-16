@@ -15,7 +15,8 @@
         "title": "Coding Editor",
         "width": 800,
         "height": 600,
-        "decorations": true
+        "decorations": true,
+        "devtools": true
       }
     ],
     "security": {

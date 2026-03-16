@@ -8,7 +8,6 @@ export const observeFile = (path: string) => {
         if (isSeeding) return;
         dirtyFiles.add(path);
         schedulePersist();
-        console.log('[observe] dirty:', path);
     };
 
     ydoc.getText(`file:${path}`).observe(fn);

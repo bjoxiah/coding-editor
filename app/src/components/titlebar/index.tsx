@@ -27,7 +27,6 @@ export const TitleBar = () => {
   };
 
   const handleRun = async () => {
-    console.log("Save button clicked");
     if (agentRunning || expoRunning) return;
     await publishToSnack();
   };

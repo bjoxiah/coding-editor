@@ -22,7 +22,6 @@ export const connectYjs = (onReady?: (doc: Y.Doc) => void) => {
 
 	provider.on('sync', (synced: boolean) => {
 		if (!synced) return;
-		console.log('[yjs] synced', workspaceCode);
 
 		// Host: seed files into ydoc on first sync
 		onReady?.(ydoc!);

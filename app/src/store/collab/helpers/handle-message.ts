@@ -19,7 +19,6 @@ export const handleMessage = (msg: any) => {
 						const yText = doc.getText(`file:${file.path}`);
 						if (yText.length === 0) {
 							yText.insert(0, file.content);
-							console.log('[yjs] seeded:', file.path);
 						}
 					});
 				});

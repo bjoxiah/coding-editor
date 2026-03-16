@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' ws://localhost:1234 https://*.amazonaws.com https://snack.expo.dev https://*.expo.dev wss://*.expo.dev https://snackager.expo.io; img-src 'self' blob: data: https://*.amazonaws.com https://api.qrserver.com; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; connect-src 'self' ws://localhost:1234 https://*.amazonaws.com https://snack.expo.dev https://*.expo.dev wss://*.expo.dev https://snackager.expo.io https://snackager.eascdn.net https://exp.host https://cdn.jsdelivr.net; img-src 'self' blob: data: https://*.amazonaws.com https://api.qrserver.com; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {

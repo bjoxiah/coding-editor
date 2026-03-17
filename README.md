@@ -152,6 +152,7 @@ Each release is triggered by pushing a git tag. The workflow builds the app acro
 
 I get my source icon image from https://icon.kitchen which usually comes as a `.icns` image then I convert to `.png` by running this:
 
+> **Note:** `sips` is a macOS-only command. On Windows or Linux use [cloudconvert.com](https://cloudconvert.com) to convert your source image to PNG first.
 ```bash
 sips -s format png ~/Desktop/your-icon.icns --out ~/Desktop/source.png
 ```
